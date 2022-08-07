@@ -1,11 +1,13 @@
 #include "input_reader.h"
 
-namespace transportCatalogue {
+namespace transport_catalogue {
 
 using namespace std::literals;
 using detail::QueryType;
 
 namespace detail {
+
+const std::string_view DIGITS = "0123456789"sv;
 
 void CutOff(std::string_view& str) {
 	while (str.front() == ' ' || str.front() == '-' || str.front() == '>') {
@@ -42,7 +44,7 @@ QueryType GetQueryType(const std::string& query) {
 	return QueryType::INCORRECT;
 }
 
-AddBusQuery ParseAddBusQuery(const std::string_view str) {
+AddBusQuery ParseBusQuery(const std::string_view str) {
 	AddBusQuery query;
 	query.name = SecondCommand(str);
 	query.name.remove_suffix(1);
@@ -64,7 +66,7 @@ AddBusQuery ParseAddBusQuery(const std::string_view str) {
 	return query;
 }
 
-AddStopQuery ParseAddStopQuery(const std::string_view str) {
+AddStopQuery ParseStopQuery(const std::string_view str) {
 	AddStopQuery query;
 	query.name = SecondCommand(str);
 	query.name.remove_suffix(1);
@@ -72,8 +74,7 @@ AddStopQuery ParseAddStopQuery(const std::string_view str) {
 	size_t coord_end = str.find(',', coord_begin);
 	assert(coord_end != std::string::npos);
 	query.latitude = std::stod(std::string{ str.substr(coord_begin, coord_end - coord_begin) });
-
-	coord_begin = str.find_first_of("0123456789"sv, coord_end);
+	coord_begin = str.find_first_of(DIGITS, coord_end);
 	assert(coord_begin != std::string::npos);
 	coord_end = str.find(',', coord_begin);
 	bool is_end = coord_end == std::string::npos;
@@ -84,7 +85,7 @@ AddStopQuery ParseAddStopQuery(const std::string_view str) {
 	size_t distance_begin, distance_end, name_begin, name_end;
 	name_end = coord_end;
 	do {
-		distance_begin = str.find_first_of("0123456789"sv, name_end);
+		distance_begin = str.find_first_of(DIGITS, name_end);
 		distance_end = str.find('m', distance_begin);
 		assert(distance_end != std::string::npos);
 		int distance = std::stoi(std::string{ str.substr(distance_begin, distance_begin - distance_end) });
@@ -140,10 +141,10 @@ void ProcessQueries(std::vector<std::string>& queries, Catalogue& catalogue, std
 			assert(false);
 			break;
 		case QueryType::AddStop:
-			add_stop_queries.push_back(std::move(detail::ParseAddStopQuery(query)));
+			add_stop_queries.push_back(std::move(detail::ParseStopQuery(query)));
 			break;
 		case QueryType::AddBus:
-			add_bus_queries.push_back(std::move(detail::ParseAddBusQuery(query)));
+			add_bus_queries.push_back(std::move(detail::ParseBusQuery(query)));
 			break;
 		case QueryType::PrintStop:
 			print_queries.push_back({ QueryType::PrintStop, detail::SecondCommand(query) });
@@ -161,7 +162,7 @@ void ProcessQueries(std::vector<std::string>& queries, Catalogue& catalogue, std
 		catalogue.AddStop(add_stop_query.name, add_stop_query.latitude, add_stop_query.longitude);
 	}
 	for (const auto& add_stop_query : add_stop_queries) {
-		catalogue.AddStopDistances(add_stop_query.name, add_stop_query.name_to_dist);
+		catalogue.SetStopDistances(add_stop_query.name, add_stop_query.name_to_dist);
 	}
 	for (const auto& add_bus_query : add_bus_queries) {
 		catalogue.AddBus(add_bus_query.name, add_bus_query.stops, add_bus_query.is_circle);
@@ -183,4 +184,4 @@ void ProcessQueries(std::vector<std::string>& queries, Catalogue& catalogue, std
 
 } //end namespace io
 
-} //end namespace transportCatalogue
+} //end namespace transport_catalogue

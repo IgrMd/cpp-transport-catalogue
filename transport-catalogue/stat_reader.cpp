@@ -1,6 +1,6 @@
 #include"stat_reader.h"
 
-namespace transportCatalogue {
+namespace transport_catalogue {
 
 namespace io {
 using namespace std::literals;
@@ -35,4 +35,4 @@ void PrintStopInfo(const detail::StopInfo& stop, std::ostream& out) {
 
 } //end namespace io
 
-} //end namespace transportCatalogue
+} //end namespace transport_catalogue

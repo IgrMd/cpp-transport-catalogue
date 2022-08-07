@@ -11,7 +11,7 @@
 #include <vector>
 #include <unordered_map>
 
-namespace transportCatalogue {
+namespace transport_catalogue {
 
 namespace detail {
 
@@ -45,9 +45,9 @@ std::string_view SecondCommand(std::string_view str);
 
 QueryType GetQueryType(const std::string& query);
 
-AddBusQuery ParseAddBusQuery(const std::string_view str);
+AddBusQuery ParseBusQuery(const std::string_view str);
 
-AddStopQuery ParseAddStopQuery(const std::string_view str);
+AddStopQuery ParseStopQuery(const std::string_view str);
 
 std::string ReadLine(std::istream& in);
 
@@ -63,4 +63,4 @@ std::vector<std::string> ReadQueries(std::istream& in);
 
 } //end namespace io
 
-} //end namespace transportCatalogue
+} //end namespace transport_catalogue
