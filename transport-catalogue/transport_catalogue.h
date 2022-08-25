@@ -1,11 +1,13 @@
 #pragma once
 
+#include "domain.h"
 #include "geo.h"
 
 #include <algorithm>
 #include <cassert>
 #include <deque>
 #include <functional>
+#include <optional>
 #include <set>
 #include <string>
 #include <tuple>
@@ -14,36 +16,20 @@
 
 namespace transport_catalogue {
 
-namespace detail{
-struct BusInfo {
-	BusInfo(const std::string_view name);
-	BusInfo(const std::string_view name, bool is_found, size_t stops_count,
-		size_t unique_stops_count, double length_geo, int length_curv);
-	const std::string_view name;
-	bool is_found = false;
-	size_t stops_count = 0;
-	size_t unique_stops_count = 0;
-	double length_geo = 0;
-	int length_curv = 0;
-};
+class TransportCatalogue {
 
-struct StopInfo {
-	StopInfo(const std::string_view name, bool is_found, const std::set<std::string_view>& buses);
-	const std::string_view name;
-	const bool is_found = false;
-	const std::set<std::string_view>& buses;
-};
+using Bus = domain::Bus;
+using Stop = domain::Stop;
+using StopPair = domain::StopPair;
+using StopPairHasher = domain::StopPairHasher;
 
-} //end namespace detail
-
-class Catalogue {
 public:
-	Catalogue() = default;
+	TransportCatalogue() = default;
 
 	template<typename StringType>
-	void AddBus(const std::string_view name, const std::vector<StringType>& stop, const bool is_circles);
+	void AddBus(const std::string_view name, const std::vector<StringType>& stop, const bool is_roundtrip);
 	template<typename StringType>
-	void AddBus(std::string&& name, const std::vector<StringType>& stops, const bool is_circle);
+	void AddBus(std::string&& name, const std::vector<StringType>& stops, const bool is_roundtrip);
 
 	void AddStop(const std::string_view name, double latitude, double longitude);
 	void AddStop(std::string&& name, double latitude, double longitude);
@@ -51,36 +37,20 @@ public:
 	//Добавляет информацию о расстояниях между остановками
 	void SetStopDistances(std::string_view name, const std::unordered_map<std::string_view, int>& name_to_dist);
 
-	detail::BusInfo GetBusInfo(const std::string_view name) const;
-	
-	detail::StopInfo GetStopInfo(const std::string_view name) const;
+	std::optional<domain::BusStat> GetBusStat(const std::string_view name) const;
+
+	std::optional<domain::StopStat> GetStopStat(const std::string_view name) const;
+
+	const std::deque<Bus>& GetBuses() const;
+
+	const std::deque<Stop>& GetStops() const;
+
+	std::vector<const Stop*> GetStopsUsed() const;
+
 
 private:
-	//Остановка
-	struct Stop {
-		std::string name;
-		geo::Coordinates coordinates;
-	};
 
-	//Автобус (маршрут)
-	struct Bus {
-		std::string name;
-		std::vector<const Stop*> stops;
-		bool is_circle = false;
-		size_t unique_stops_count = 0;
-	};
-
-	//Пара остановок для использования в ассоциативном контейнере
-	struct StopPair {
-		const Stop* from;
-		const Stop* to;
-		bool operator==(const StopPair& other) const;
-	};
-
-	//Хэшер для пары остановок
-	struct StopPairHasher {
-		size_t operator()(const StopPair& stop_pair) const;
-	};
+	std::pair<double, int> CalculateLength(const Bus& bus) const;
 
 	//Контейнер автобусов (маршрутов)
 	std::deque <Bus> buses_;
@@ -98,22 +68,20 @@ private:
 	std::unordered_map<std::string_view, std::set<std::string_view>> stop_to_buses_;
 
 	std::unordered_map<StopPair, int, StopPairHasher> stop_pair_to_dist_;
-
-	std::pair<double, int> CalculateLength(const Bus& bus) const;
 };
 
 template<typename StringType>
-void Catalogue::AddBus(const std::string_view name, const std::vector<StringType>& stops, const bool is_circle) {
-	AddBus(std::string{ name }, stops, is_circle);
+void TransportCatalogue::AddBus(const std::string_view name, const std::vector<StringType>& stops, const bool is_roundtrip) {
+	AddBus(std::string{ name }, stops, is_roundtrip);
 }
 template<typename StringType>
-void Catalogue::AddBus(std::string&& name, const std::vector<StringType>& stops, const bool is_circle) {
+void TransportCatalogue::AddBus(std::string&& name, const std::vector<StringType>& stops, const bool is_roundtrip) {
 	//метот вызывается при явной передаче name по rvalue ссылке. (временный объект или name обернутый в std::move)
 	//в противном случае name принимается как const std::string_view, создается копия и копия уничтожается. (см метод выше)
 	Bus bus;
 	bus.name = std::move(name);
-	bus.is_circle = is_circle;
-	bus.stops.reserve(stops.size() + stops.size() * (!is_circle));
+	bus.is_roundtrip = is_roundtrip;
+	bus.stops.reserve(stops.size() + stops.size() * (!is_roundtrip));
 	std::unordered_set<std::string_view> unique_stops;
 	for (const auto& stop : stops) {
 		assert(name_to_stop_.count(stop));
@@ -121,7 +89,7 @@ void Catalogue::AddBus(std::string&& name, const std::vector<StringType>& stops,
 		unique_stops.insert(stop);
 	}
 	bus.unique_stops_count = unique_stops.size();
-	if (!is_circle) {
+	if (!is_roundtrip) {
 		bus.stops.resize(stops.size() * 2 - 1);
 		std::reverse_copy(bus.stops.begin(),
 			std::next(bus.stops.begin(), stops.size() - 1),

@@ -7,8 +7,8 @@ namespace transport_catalogue {
 
 namespace geo {
 
-constexpr double TRESHOLD = 1e-6;
-constexpr int ERTH_RADIUS = 6371000;
+static const double TRESHOLD = 1e-6;
+static const int ERTH_RADIUS = 6371000;
 
 struct Coordinates {
 	double lat;
@@ -21,16 +21,7 @@ struct Coordinates {
 	}
 };
 
-inline double ComputeDistance(Coordinates from, Coordinates to) {
-	using namespace std;
-	if (from == to) {
-		return 0;
-	}
-	static const double dr = M_PI / 180.;
-	return acos(sin(from.lat * dr) * sin(to.lat * dr)
-				+ cos(from.lat * dr) * cos(to.lat * dr) * cos(abs(from.lng - to.lng) * dr))
-		* ERTH_RADIUS;
-}
+double ComputeDistance(Coordinates from, Coordinates to);
 
 } //end namespace geo
 

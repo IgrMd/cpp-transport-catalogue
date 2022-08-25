@@ -1,34 +1,34 @@
 #include "transport_catalogue.h"
 
-namespace transport_catalogue{
+namespace transport_catalogue {
 using namespace std::literals;
 
-void Catalogue::AddStop(const std::string_view name, double latitude, double longitude) {
+void TransportCatalogue::AddStop(const std::string_view name, double latitude, double longitude) {
 	AddStop(std::string{ name }, latitude, longitude);
 }
 
-void Catalogue::AddStop(std::string&& name, double latitude, double longitude) {
-	//РјРµС‚РѕС‚ РІС‹Р·С‹РІР°РµС‚СЃСЏ РїСЂРё СЏРІРЅРѕР№ РїРµСЂРµРґР°С‡Рµ name РїРѕ rvalue СЃСЃС‹Р»РєРµ. (РІСЂРµРјРµРЅРЅС‹Р№ РѕР±СЉРµРєС‚ РёР»Рё name РѕР±РµСЂРЅСѓС‚С‹Р№ РІ std::move)
-	//РІ РїСЂРѕС‚РёРІРЅРѕРј СЃР»СѓС‡Р°Рµ name РїСЂРёРЅРёРјР°РµС‚СЃСЏ РєР°Рє const std::string_view, СЃРѕР·РґР°РµС‚СЃСЏ РєРѕРїРёСЏ Рё РєРѕРїРёСЏ СѓРЅРёС‡С‚РѕР¶Р°РµС‚СЃСЏ.
-	Stop stop{std::move(name), {latitude, longitude}};
+void TransportCatalogue::AddStop(std::string&& name, double latitude, double longitude) {
+	//метот вызывается при явной передаче name по rvalue ссылке. (временный объект или name обернутый в std::move)
+	//в противном случае name принимается как const std::string_view, создается копия и копия уничтожается.
+	Stop stop{ std::move(name), {latitude, longitude} };
 	assert(!name_to_stop_.count(stop.name));
 	stops_.push_back(std::move(stop));
 	name_to_stop_[stops_.back().name] = &stops_.back();
 	stop_to_buses_[stops_.back().name];
 }
 
-void Catalogue::SetStopDistances(std::string_view name_from,
+void TransportCatalogue::SetStopDistances(std::string_view name_from,
 	const std::unordered_map<std::string_view, int>& name_to_dist) {
 	auto stop_from = name_to_stop_.find(name_from);
 	assert(stop_from != name_to_stop_.end());
-	for (const auto [name_to, distance] : name_to_dist) {
+	for (const auto& [name_to, distance] : name_to_dist) {
 		auto stop_to = name_to_stop_.find(name_to);
 		assert(stop_to != name_to_stop_.end());
 		stop_pair_to_dist_[{stop_from->second, stop_to->second}] = distance;
 	}
 }
 
-std::pair<double, int> Catalogue::CalculateLength(const Bus& bus) const {
+std::pair<double, int> TransportCatalogue::CalculateLength(const Bus& bus) const {
 	double length_geo = 0;
 	int length_curv = 0;
 	auto from = bus.stops.begin();
@@ -47,59 +47,57 @@ std::pair<double, int> Catalogue::CalculateLength(const Bus& bus) const {
 		from = to;
 		to = std::next(to);
 	}
-	if (!bus.is_circle) {
-		size_t middle = bus.stops.size()/2;
+	if (!bus.is_roundtrip) {
+		size_t middle = bus.stops.size() / 2;
 		auto reverse = bus.stops[middle];
 		if (stop_pair_to_dist_.count({ reverse, reverse })) {
 			length_curv += stop_pair_to_dist_.at({ reverse, reverse });
 		}
 	}
-	return {length_geo, length_curv};
+	return { length_geo, length_curv };
 }
 
-detail::BusInfo Catalogue::GetBusInfo(const std::string_view name) const {
+std::optional<domain::BusStat> TransportCatalogue::GetBusStat(const std::string_view name) const {
 	const auto result = name_to_bus_.find(name);
 	if (result == name_to_bus_.end()) {
-		return { name };
+		return std::optional<domain::BusStat>();
 	}
 	size_t stops_count = result->second->stops.size();
 	size_t unique_stops_count = result->second->unique_stops_count;
 	const auto [length_geo, length_curv] = CalculateLength(*(result->second));
-	return { result->first, true, stops_count, unique_stops_count, length_geo , length_curv };
+	return std::optional<domain::BusStat>(
+		{ result->first, stops_count, unique_stops_count, length_geo, length_curv });
 }
 
-detail::StopInfo Catalogue::GetStopInfo(const std::string_view name) const {
+std::optional<domain::StopStat> TransportCatalogue::GetStopStat(const std::string_view name) const {
 	const auto result = stop_to_buses_.find(name);
 	if (result == stop_to_buses_.end()) {
 		static const std::set<std::string_view> empty_result;
-		return { name, false, empty_result};
+		return std::optional<domain::StopStat>();
 	}
-	return { result->first, true, result->second };
+	return std::optional<domain::StopStat>({ result->first, result->second });
 }
 
-bool Catalogue::StopPair::operator==(const StopPair& other) const {
-	return this->from == other.from && this->to == other.to;
+const std::deque <domain::Bus>& TransportCatalogue::GetBuses() const{
+	return buses_;
 }
 
-size_t Catalogue::StopPairHasher::operator()(const StopPair& stop_pair) const {
-	return std::hash<std::string_view>{}(stop_pair.from->name) + std::hash<std::string_view>{}(stop_pair.to->name)*43;
+const std::deque <domain::Stop>& TransportCatalogue::GetStops() const {
+	return stops_;
 }
 
-namespace detail{
+std::vector<const domain::Stop*> TransportCatalogue::GetStopsUsed() const {
+	std::vector<const domain::Stop*> stops;
+	stops.reserve(stop_to_buses_.size());
+	for (const auto& [stop, buses] : stop_to_buses_) {
+		if (!buses.empty()) {
+			stops.push_back(name_to_stop_.at(stop));
+		}
+	}
+	return stops;
+}
 
-BusInfo::BusInfo(const std::string_view name)
-	: name(name) {}
-BusInfo::BusInfo(const std::string_view name, bool is_found, size_t stops_count,
-	size_t unique_stops_count, double length_geo, int length_curv)
-	: name(name),
-	is_found(is_found),
-	stops_count(stops_count),
-	unique_stops_count(unique_stops_count),
-	length_geo(length_geo),
-	length_curv(length_curv) {}
-
-StopInfo::StopInfo(const std::string_view name, bool is_found, const std::set<std::string_view>& buses)
-	: name(name), is_found(is_found), buses(buses) {}
+namespace detail {
 
 } //end namespace detail
 

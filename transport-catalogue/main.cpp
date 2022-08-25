@@ -1,20 +1,35 @@
-//Sprint 9. transport_catalogue v0.1.1.
-
-#include "input_reader.h"
-#include "stat_reader.h"
-#include "transport_catalogue.h"
+#include "json_reader.h"
+#include "map_renderer.h"
+#include "request_handler.h"
+//#include "TESTS.h"
 
 #include <iostream>
-
-using namespace std::literals;
+#include <fstream>
 
 int main() {
-	transport_catalogue::Catalogue catalogue;
+using namespace std::string_literals;
+using namespace transport_catalogue;
 
-	std::vector<std::string> inp_queries = transport_catalogue::io::ReadQueries(std::cin);
-	transport_catalogue::io::ProcessQueries(inp_queries, catalogue, std::cout);
-	std::vector<std::string> outp_queries = transport_catalogue::io::ReadQueries(std::cin);
-	transport_catalogue::io::ProcessQueries(outp_queries, catalogue, std::cout);
+// TestJSON();
 
-	return 0;
+std::ifstream input("input.json"s);
+//std::ifstream input("input.txt"s);
+//std::ofstream output_json("output.json"s);
+//std::ofstream output_svg("output.svg"s
+std::ofstream output_svg("output.txt"s);
+
+auto doc = json_reader::ReadFromJSON(input);
+//auto doc = json_reader::ReadFromJSON(std::cin);
+TransportCatalogue t_catalogue;
+
+json_reader::ProcessBaseRequests(t_catalogue, doc);
+//json_reader::ProcessStatRequests(t_catalogue, doc, std::cout);
+
+renderer::MapRenderer renderer(json_reader::ProcessRenderSettings(doc));
+RequestHandler req_handler(t_catalogue, renderer);
+
+svg::Document map;
+req_handler.RenderMap(map);
+//map.Render(std::cout);
+map.Render(output_svg);
 }
