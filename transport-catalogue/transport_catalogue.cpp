@@ -3,14 +3,12 @@
 namespace transport_catalogue {
 using namespace std::literals;
 
-void TransportCatalogue::AddStop(const std::string_view name, double latitude, double longitude) {
-	AddStop(std::string{ name }, latitude, longitude);
+void TransportCatalogue::AddStop(const std::string_view name, geo::Coordinates coordinates) {
+	AddStop(std::string{ name }, coordinates);
 }
 
-void TransportCatalogue::AddStop(std::string&& name, double latitude, double longitude) {
-	//метот вызывается при явной передаче name по rvalue ссылке. (временный объект или name обернутый в std::move)
-	//в противном случае name принимается как const std::string_view, создается копия и копия уничтожается.
-	Stop stop{ std::move(name), {latitude, longitude} };
+void TransportCatalogue::AddStop(std::string&& name, geo::Coordinates coordinates) {
+	Stop stop{ std::move(name), coordinates };
 	assert(!name_to_stop_.count(stop.name));
 	stops_.push_back(std::move(stop));
 	name_to_stop_[stops_.back().name] = &stops_.back();
@@ -80,10 +78,6 @@ std::optional<domain::StopStat> TransportCatalogue::GetStopStat(const std::strin
 
 const std::deque <domain::Bus>& TransportCatalogue::GetBuses() const{
 	return buses_;
-}
-
-const std::deque <domain::Stop>& TransportCatalogue::GetStops() const {
-	return stops_;
 }
 
 std::vector<const domain::Stop*> TransportCatalogue::GetStopsUsed() const {

@@ -6,7 +6,9 @@
 
 #include <cassert>
 #include <iostream>
+#include <optional>
 #include <string>
+#include <sstream>
 #include <string_view>
 #include <utility>
 
@@ -22,7 +24,7 @@ void ProcessBaseRequests(TransportCatalogue& t_catalogue,
 	const json::Document& raw_requests);
 
 //Обрабатывает запросы чтения и выводит результат в поток
-void ProcessStatRequests(TransportCatalogue& t_catalogue,
+void ProcessStatRequests(const RequestHandler& req_handler,
 	const json::Document& raw_requests, std::ostream& output);
 
 //обрабатывает настройти рендера
@@ -33,7 +35,8 @@ namespace detail {
 enum class RequestType {
 	INCORRECT,
 	StopStat,
-	BusStat
+	BusStat,
+	MAP
 };
 struct AddStopRequest {
 	std::string_view name;
@@ -54,6 +57,19 @@ struct StatRequest {
 
 //Возвращает цвет в формате svg::Color
 svg::Color GetColor(const json::Node& color);
+
+
+//Обрабатывет stat_request "Stop"
+void ProcessStopStatRequest(const RequestHandler& req_handler, json::Array& stats,
+	const detail::StatRequest& stat_request);
+
+//Обрабатывет stat_request "Bus"
+void ProcessBusStatRequest(const RequestHandler& req_handler, json::Array& stats,
+	const detail::StatRequest& stat_request);
+
+//Обрабатывет stat_request "Map"
+void ProcessMapRequest(const RequestHandler& req_handler, json::Array& stats,
+	const detail::StatRequest& stat_request);
 
 }//end namespace detail
 

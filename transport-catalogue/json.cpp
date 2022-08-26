@@ -8,82 +8,84 @@ static const std::string_view SPACES = " \n\r\t"sv; //Spaces
 static const std::string_view CHARS_TO_SHIELD = "\r\n\"\\"sv; //Escape sequences to shield
 static const std::string_view DIGITS = "-0123456789xX"sv;
 
+using Variant = std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string>;
+
 // ---------- Node ------------------
-
-Node::Node(const Document& doc)
-	: value_(doc.GetRoot().GetValue()) {}
-
-// Check Type
+//// Check Type
 bool Node::IsArray() const {
-	return std::holds_alternative<Array>(value_);
+	return std::holds_alternative<Array>(*this);
 }
 
 bool Node::IsBool() const {
-	return std::holds_alternative<bool>(value_);
+	return std::holds_alternative<bool>(*this);
 }
 
 bool Node::IsDouble() const { //Возвращает true, если в Node хранится int либо double.
-	return std::holds_alternative<double>(value_) || IsInt();
+	return std::holds_alternative<double>(*this) || IsInt();
 }
 
 bool Node::IsInt() const {
-	return std::holds_alternative<int>(value_);
+	return std::holds_alternative<int>(*this);
 }
 
 bool Node::IsPureDouble() const { //Возвращает true, если в Node хранится double.
-	return std::holds_alternative<double>(value_);
+	return std::holds_alternative<double>(*this);
 }
 
 bool Node::IsString() const {
-	return std::holds_alternative<std::string>(value_);
+	return std::holds_alternative<std::string>(*this);
 }
 
 bool Node::IsNull() const {
-	return std::holds_alternative<std::nullptr_t>(value_);
+	return std::holds_alternative<std::nullptr_t>(*this);
 }
 
 bool Node::IsMap() const {
-	return std::holds_alternative<Dict>(value_);
+	return std::holds_alternative<Dict>(*this);
 }
 
 bool Node::IsEqual(const Node& other) const {
-	return this->value_ == other.value_;
+	return static_cast<Variant>(*this) == static_cast<Variant>(other);
 }
 
 //Return value
 const Array& Node::AsArray() const {
 	if (!IsArray()) { throw std::logic_error("Not an array"s); }
-	return std::get<Array>(value_);
+	return std::get<Array>(*this);
 }
 
 bool Node::AsBool() const {
 	if (!IsBool()) { throw std::logic_error("Not a bool"s); }
-	return std::get<bool>(value_);
+	return std::get<bool>(*this);
 }
 
 const Dict& Node::AsMap() const {
 	if (!IsMap()) { throw std::logic_error("Not a map"s); }
-	return std::get<Dict>(value_);
+	return std::get<Dict>(*this);
 }
 
 int Node::AsInt() const {
 	if (!IsInt()) { throw std::logic_error("Not an int"s); }
-	return std::get<int>(value_);
+	return std::get<int>(*this);
 }
 
 double Node::AsDouble() const {
 	if (!IsDouble()) { throw std::logic_error("Not a double"s); }
-	return IsPureDouble() ? std::get<double>(value_) : static_cast<double>(AsInt());
+	return IsPureDouble() ? std::get<double>(*this) : static_cast<double>(AsInt());
 }
 
 const std::string& Node::AsString() const {
 	if (!IsString()) { throw std::logic_error("Not a string"s); }
-	return std::get<std::string>(value_);
+	return std::get<std::string>(*this);
+}
+
+const Node& Node::GetValue() const {
+	return *this;
 }
 
 //Other
 void Node::PrintValue(detail::PrintContext context) const {
-	std::visit(detail::NodePrinter{ context }, value_);
+	std::visit(detail::NodePrinter{ context }, static_cast<Variant>(*this));
 }
 bool operator==(const Node& lhs, const Node& rhs) {
 	return lhs.IsEqual(rhs);
@@ -165,7 +167,6 @@ void NodePrinter::operator()(const Array& array) const {
 	}
 	context.out << '\n';
 	context.PrintIndent();
-	//context.out << "]\n";
 	context.out << "]";
 }
 
@@ -273,7 +274,6 @@ Node LoadNode(std::string_view str) {
 	}
 	return LoadDouble(str);
 }
-
 
 Node LoadDict(std::string_view sv) {
 	Dict result;

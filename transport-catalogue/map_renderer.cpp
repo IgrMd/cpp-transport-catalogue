@@ -1,11 +1,5 @@
 #include "map_renderer.h"
 
-/*
- * В этом файле вы можете разместить код, отвечающий за визуализацию карты маршрутов в формате SVG.
- * Визуализация маршрутов вам понадобится во второй части итогового проекта.
- * Пока можете оставить файл пустым.
- */
-
 namespace renderer {
 
 using namespace transport_catalogue;
@@ -20,8 +14,8 @@ const RenderSettings& MapRenderer::GetSettings() const {
 	return render_settings_;
 }
 
-void MapRenderer::RenderMap(svg::Document& map, std::vector<domain::Bus>& buses,
-	std::vector<const domain::Stop*>& stops) const {
+void MapRenderer::RenderMap(svg::Document& map, const std::vector<domain::Bus>& buses,
+	const std::vector<const domain::Stop*>& stops) const {
 	std::vector<geo::Coordinates> geo_coords(stops.size());
 	std::transform(
 		stops.begin(),
@@ -31,13 +25,20 @@ void MapRenderer::RenderMap(svg::Document& map, std::vector<domain::Bus>& buses,
 	);
 	const SphereProjector proj{
 		geo_coords.begin(), geo_coords.end(), render_settings_.width,
-		render_settings_.height,
-		render_settings_.padding
+		render_settings_.height, render_settings_.padding
 	};
 
+	RenderBusRouts(map, buses, proj);
+	RenderBusNames(map, buses, proj);
+	RenderStopPoints(map, stops, proj);
+	RenderStopNames(map, stops, proj);
+}
+
+void MapRenderer::RenderBusRouts(svg::Document& map,
+	const std::vector<domain::Bus>& buses, const SphereProjector& proj) const
+{
 	const size_t colors_count = render_settings_.color_palette.size();
 	size_t color_index = 0;
-	//Ломаные линии маршрутов
 	for (const auto& bus : buses) {
 		if (bus.stops.empty()) { continue; }
 		const auto& color = render_settings_.color_palette[color_index];
@@ -55,8 +56,13 @@ void MapRenderer::RenderMap(svg::Document& map, std::vector<domain::Bus>& buses,
 		++color_index;
 		color_index = (color_index >= colors_count) ? 0 : color_index;
 	}
-	//Названия маршрутов
-	color_index = 0;
+}
+
+void MapRenderer::RenderBusNames(svg::Document& map,
+	const std::vector<domain::Bus>& buses, const SphereProjector& proj) const
+{
+	const size_t colors_count = render_settings_.color_palette.size();
+	size_t color_index = 0;
 	for (const auto& bus : buses) {
 		if (bus.stops.empty()) { continue; }
 		const auto& color = render_settings_.color_palette[color_index];
@@ -93,7 +99,10 @@ void MapRenderer::RenderMap(svg::Document& map, std::vector<domain::Bus>& buses,
 		++color_index;
 		color_index = (color_index >= colors_count) ? 0 : color_index;
 	}
-	//Точки остановок
+}
+void MapRenderer::RenderStopPoints(svg::Document& map,
+	const std::vector<const domain::Stop*>& stops, const SphereProjector& proj) const
+{
 	svg::Circle stop_point;
 	stop_point
 		.SetFillColor("white")
@@ -102,7 +111,11 @@ void MapRenderer::RenderMap(svg::Document& map, std::vector<domain::Bus>& buses,
 		stop_point.SetCenter(proj(stop->coordinates));
 		map.Add(stop_point);
 	}
-	//Названия остановок
+}
+
+void MapRenderer::RenderStopNames(svg::Document& map,
+	const std::vector<const domain::Stop*>& stops, const SphereProjector& proj) const
+{
 	svg::Text stop_name;
 	stop_name
 		.SetFillColor("black")

@@ -150,8 +150,6 @@ protected:
 
 private:
 	Owner& AsOwner() {
-		// static_cast безопасно преобразует *this к Owner&,
-		// если класс Owner — наследник PathProps
 		return static_cast<Owner&>(*this);
 	}
 

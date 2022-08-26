@@ -35,16 +35,10 @@ public:
 	using runtime_error::runtime_error;
 };
 
-class Node {
+class Node final :
+	private std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string> {
 public:
-	using Value = std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string>;
-
-	explicit Node() = default;
-
-	template<typename ValueType>
-	Node(ValueType value);
-
-	Node(const Document& doc);
+	using variant::variant;
 
 	bool IsArray() const;
 	bool IsBool() const;
@@ -61,16 +55,9 @@ public:
 	double AsDouble() const;
 	const Dict& AsMap() const;
 	const std::string& AsString() const;
-	const Value& GetValue() const { return value_; }
+	const Node& GetValue() const;
 	void PrintValue(detail::PrintContext context) const;
-
-private:
-	Value value_;
 };
-
-template<typename ValueType>
-Node::Node(ValueType value)
-	: value_(Value{ std::move(value) }) {}
 
 bool operator==(const Node& lhs, const Node& rhs);
 
@@ -142,7 +129,7 @@ Node LoadInt(std::string_view str);
 
 Node LoadDouble(std::string_view str);
 
-//Фнцкии-помошники парсинга
+//Фунцкии-помощники парсинга
 namespace helpers {
 
 char UnshildedChar(char c);

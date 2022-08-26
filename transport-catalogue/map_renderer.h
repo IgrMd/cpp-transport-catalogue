@@ -61,11 +61,27 @@ public:
 
 	const RenderSettings& GetSettings() const;
 
-	void RenderMap(svg::Document& map, std::vector<Bus>& buses,
-		std::vector<const Stop*>& stops) const;
+	void RenderMap(svg::Document& map, const std::vector<Bus>& buses,
+		const std::vector<const Stop*>& stops) const;
 
 private:
 	RenderSettings render_settings_;
+
+	//Ломаные линии маршрутов
+	void RenderBusRouts(svg::Document& map,
+		const std::vector<Bus>& buses, const SphereProjector& proj) const;
+
+	//Названия маршрутов
+	void RenderBusNames(svg::Document& map,
+		const std::vector<Bus>& buses, const SphereProjector& proj) const;
+
+	//Точки остановок
+	void RenderStopPoints(svg::Document& map,
+		const std::vector<const Stop*>& stops, const SphereProjector& proj) const;
+
+	//Названия остановок
+	void RenderStopNames(svg::Document& map,
+		const std::vector<const Stop*>& stops, const SphereProjector& proj) const;
 };
 
 template <typename PointInputIt>
@@ -104,11 +120,3 @@ SphereProjector::SphereProjector(PointInputIt points_begin, PointInputIt points_
 }
 
 }//end namespace renderer
-
-/*
- * В этом файле вы можете разместить код, отвечающий за визуализацию карты маршрутов в формате SVG.
- * Визуализация маршрутов вам понадобится во второй части итогового проекта.
- * Пока можете оставить файл пустым.
- */
-
-

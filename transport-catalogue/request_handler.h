@@ -16,20 +16,18 @@ using transport_catalogue::domain::StopStat;
 
 class RequestHandler {
 public:
-	// MapRenderer понадобится в следующей части итогового проекта
 	RequestHandler(const TransportCatalogue& db, const renderer::MapRenderer& renderer);
 
 	// Возвращает информацию о маршруте (запрос Bus)
 	std::optional<BusStat> GetBusStat(const std::string_view& bus_name) const;
 
-	// Возвращает маршруты, проходящие через остановку
-	std::optional<StopStat> GetBusesByStop(const std::string_view& stop_name) const;
+	// Возвращает маршруты, проходящие через остановку (запрос Stop)
+	std::optional<StopStat> GetStopStat(const std::string_view& stop_name) const;
 
-	// Выводит карту маршрутов
+	//Рисует карту (запрос Map)
 	void RenderMap(svg::Document& map) const;
 
 private:
-	// RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
 	const TransportCatalogue& db_;
 	const renderer::MapRenderer& renderer_;
 };

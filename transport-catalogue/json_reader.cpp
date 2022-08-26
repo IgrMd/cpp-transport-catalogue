@@ -17,7 +17,8 @@ Document ReadFromJSON(std::istream& input) {
 }
 
 void ProcessBaseRequests(TransportCatalogue& t_catalogue,
-	const Document& raw_requests) {
+	const Document& raw_requests)
+{
 	assert(raw_requests.GetRoot().IsMap());
 	if ( !raw_requests.GetRoot().AsMap().count(BASE_REQUESTS) ) {
 		return;
@@ -49,18 +50,22 @@ void ProcessBaseRequests(TransportCatalogue& t_catalogue,
 		}
 	}
 	for (const auto& add_stop_query : add_stop_requests) {
-		t_catalogue.AddStop(add_stop_query.name, add_stop_query.latitude, add_stop_query.longitude);
+		t_catalogue.AddStop(add_stop_query.name,
+			{ add_stop_query.latitude, add_stop_query.longitude });
 	}
 	for (const auto& add_stop_query : add_stop_requests) {
-		t_catalogue.SetStopDistances(add_stop_query.name, add_stop_query.name_to_dist);
+		t_catalogue.SetStopDistances(add_stop_query.name, 
+			add_stop_query.name_to_dist);
 	}
 	for (const auto& add_bus_query : add_bus_requests) {
-		t_catalogue.AddBus(add_bus_query.name, add_bus_query.stops, add_bus_query.is_roundtrip);
+		t_catalogue.AddBus(add_bus_query.name, 
+			add_bus_query.stops, add_bus_query.is_roundtrip);
 	}
 }
 
-void ProcessStatRequests(TransportCatalogue& t_catalogue,
-	const Document& raw_requests, std::ostream& output) {
+void ProcessStatRequests(const RequestHandler& req_handler,
+	const Document& raw_requests, std::ostream& output)
+{
 	using detail::RequestType;
 	assert(raw_requests.GetRoot().IsMap());
 	if ( !raw_requests.GetRoot().AsMap().count(STAT_REQUESTS) ) {
@@ -75,43 +80,34 @@ void ProcessStatRequests(TransportCatalogue& t_catalogue,
 			stat_request.type = RequestType::StopStat;
 		} else if (request.AsMap().at("type"s) == "Bus"s) {
 			stat_request.type = RequestType::BusStat;
-		} else {
+		} else if (request.AsMap().at("type"s) == "Map"s) {
+			stat_request.type = RequestType::MAP;
+		}
+		else {
 			stat_request.type = RequestType::INCORRECT;
 			assert(false);
 		}
 		stat_request.id = request.AsMap().at("id"s).AsInt();
-		stat_request.name = request.AsMap().at("name"s).AsString();
+		if ( stat_request.type != RequestType::MAP ) {
+			stat_request.name = request.AsMap().at("name"s).AsString();
+		}
 		stat_requests.push_back(std::move(stat_request));
 	}
 	Array stats;
 	for (const auto& stat_request : stat_requests) {
-		if (stat_request.type == RequestType::StopStat) {
-			auto stop_stat = t_catalogue.GetStopStat(stat_request.name);
-			if (stop_stat) {
-				Array buses;
-				for (const auto& bus : stop_stat->buses) {
-					buses.push_back(std::string{ bus });
-				}
-				Dict stat{ {"buses"s, buses}, {"request_id"s, stat_request.id } };
-				stats.push_back(std::move(stat));
-			} else {
-				Dict stat{ {"request_id"s, stat_request.id }, {"error_message"s, "not found"s} };
-				stats.push_back(std::move(stat));
-			}
-		} if (stat_request.type == RequestType::BusStat) {
-			auto bus_stat = t_catalogue.GetBusStat(stat_request.name);
-			if (bus_stat) {
-				Dict stat;
-				stat.insert({ "curvature"s, (bus_stat->length_curv / bus_stat->length_geo) });
-				stat.insert({ "request_id"s, stat_request.id });
-				stat.insert({ "route_length"s, bus_stat->length_curv });
-				stat.insert({ "stop_count"s, static_cast<int>(bus_stat->stops_count) });
-				stat.insert({ "unique_stop_count"s, static_cast<int>(bus_stat->unique_stops_count) });
-				stats.push_back(std::move(stat));
-			} else {
-				Dict stat{ {"request_id"s, stat_request.id }, {"error_message"s, "not found"s} };
-				stats.push_back(std::move(stat));
-			}
+		switch (stat_request.type) {
+		case RequestType::StopStat:
+			detail::ProcessStopStatRequest(req_handler, stats, stat_request);
+			break;
+		case RequestType::BusStat:
+			detail::ProcessBusStatRequest(req_handler, stats, stat_request);
+			break;
+		case RequestType::MAP:
+			detail::ProcessMapRequest(req_handler, stats, stat_request);
+			break;
+		default:
+			assert(false);
+			break;
 		}
 	}
 	Print(Document{ Node{ std::move(stats) } }, output);
@@ -177,6 +173,55 @@ svg::Color GetColor(const Node& color) {
 		}
 	}
 	return result;
+}
+
+//stat_request.type == RequestType::StopStat
+void ProcessStopStatRequest(const RequestHandler& req_handler, Array& stats,
+	const detail::StatRequest& stat_request)
+{
+	auto stop_stat = req_handler.GetStopStat(stat_request.name);
+	if (stop_stat) {
+		Array buses;
+		for (const auto& bus : stop_stat->buses) {
+			buses.push_back(std::string{ bus });
+		}
+		Dict stat{ {"buses"s, buses}, {"request_id"s, stat_request.id } };
+		stats.push_back(std::move(stat));
+	} else {
+		Dict stat{ {"request_id"s, stat_request.id }, {"error_message"s, "not found"s} };
+		stats.push_back(std::move(stat));
+	}
+}
+
+//stat_request.type == RequestType::BusStat
+void ProcessBusStatRequest(const RequestHandler& req_handler, Array& stats,
+	const detail::StatRequest& stat_request)
+{
+	auto bus_stat = req_handler.GetBusStat(stat_request.name);
+	if (bus_stat) {
+		Dict stat;
+		stat.insert({ "curvature"s, (bus_stat->length_curv / bus_stat->length_geo) });
+		stat.insert({ "request_id"s, stat_request.id });
+		stat.insert({ "route_length"s, bus_stat->length_curv });
+		stat.insert({ "stop_count"s, static_cast<int>(bus_stat->stops_count) });
+		stat.insert({ "unique_stop_count"s, static_cast<int>(bus_stat->unique_stops_count) });
+		stats.push_back(std::move(stat));
+	} else {
+		Dict stat{ {"request_id"s, stat_request.id }, {"error_message"s, "not found"s} };
+		stats.push_back(std::move(stat));
+	}
+}
+
+//stat_request.type == RequestType::MAP
+void ProcessMapRequest(const RequestHandler& req_handler, Array& stats,
+	const detail::StatRequest& stat_request)
+{
+	svg::Document map;
+	req_handler.RenderMap(map);
+	std::ostringstream os;
+	map.Render(os);
+	Dict stat{ {"map"s, os.str()}, {"request_id"s, stat_request.id} };
+	stats.push_back(std::move(stat));
 }
 
 }//end namespace detail

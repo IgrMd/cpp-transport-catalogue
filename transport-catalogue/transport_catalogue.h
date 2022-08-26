@@ -27,23 +27,24 @@ public:
 	TransportCatalogue() = default;
 
 	template<typename StringType>
-	void AddBus(const std::string_view name, const std::vector<StringType>& stop, const bool is_roundtrip);
+	void AddBus(const std::string_view name, const std::vector<StringType>& stop,
+		const bool is_roundtrip);
 	template<typename StringType>
-	void AddBus(std::string&& name, const std::vector<StringType>& stops, const bool is_roundtrip);
+	void AddBus(std::string&& name, const std::vector<StringType>& stops,
+		const bool is_roundtrip);
 
-	void AddStop(const std::string_view name, double latitude, double longitude);
-	void AddStop(std::string&& name, double latitude, double longitude);
+	void AddStop(const std::string_view name, geo::Coordinates coordinates);
+	void AddStop(std::string&& name, geo::Coordinates coordinates);
 
 	//Добавляет информацию о расстояниях между остановками
-	void SetStopDistances(std::string_view name, const std::unordered_map<std::string_view, int>& name_to_dist);
+	void SetStopDistances(std::string_view name,
+		const std::unordered_map<std::string_view, int>& name_to_dist);
 
 	std::optional<domain::BusStat> GetBusStat(const std::string_view name) const;
 
 	std::optional<domain::StopStat> GetStopStat(const std::string_view name) const;
 
 	const std::deque<Bus>& GetBuses() const;
-
-	const std::deque<Stop>& GetStops() const;
 
 	std::vector<const Stop*> GetStopsUsed() const;
 
@@ -71,13 +72,13 @@ private:
 };
 
 template<typename StringType>
-void TransportCatalogue::AddBus(const std::string_view name, const std::vector<StringType>& stops, const bool is_roundtrip) {
+void TransportCatalogue::AddBus(const std::string_view name,
+	const std::vector<StringType>& stops, const bool is_roundtrip) {
 	AddBus(std::string{ name }, stops, is_roundtrip);
 }
 template<typename StringType>
-void TransportCatalogue::AddBus(std::string&& name, const std::vector<StringType>& stops, const bool is_roundtrip) {
-	//метот вызывается при явной передаче name по rvalue ссылке. (временный объект или name обернутый в std::move)
-	//в противном случае name принимается как const std::string_view, создается копия и копия уничтожается. (см метод выше)
+void TransportCatalogue::AddBus(std::string&& name,
+	const std::vector<StringType>& stops, const bool is_roundtrip) {
 	Bus bus;
 	bus.name = std::move(name);
 	bus.is_roundtrip = is_roundtrip;

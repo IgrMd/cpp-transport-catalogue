@@ -1,13 +1,5 @@
 #include "request_handler.h"
 
-/*
- * Здесь можно было бы разместить код обработчика запросов к базе, содержащего логику, которую не
- * хотелось бы помещать ни в transport_catalogue, ни в json reader.
- *
- * Если вы затрудняетесь выбрать, что можно было бы поместить в этот файл,
- * можете оставить его пустым.
- */
-
 using namespace transport_catalogue;
 
 RequestHandler::RequestHandler(const TransportCatalogue& db, const renderer::MapRenderer& renderer)
@@ -18,11 +10,12 @@ std::optional<BusStat> RequestHandler::GetBusStat(const std::string_view& bus_na
 	return db_.GetBusStat(bus_name);
 }
 
-// Возвращает маршруты, проходящие через остановку
-std::optional<StopStat> RequestHandler::GetBusesByStop(const std::string_view& stop_name) const {
+// Возвращает маршруты, проходящие через остановку (запрос Stop)
+std::optional<StopStat> RequestHandler::GetStopStat(const std::string_view& stop_name) const {
 	return db_.GetStopStat(stop_name);
 }
 
+//Рисует карту (запрос Map)
 void RequestHandler::RenderMap(svg::Document& map) const {
 	std::vector<domain::Bus> buses{ db_.GetBuses().begin(), db_.GetBuses().end() };
 	std::sort(buses.begin(),
