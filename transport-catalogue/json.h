@@ -35,17 +35,21 @@ public:
 	using runtime_error::runtime_error;
 };
 
-class Node final :
-	private std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string> {
+class Node final
+	: private std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string> {
 public:
 	using variant::variant;
+	using Value = variant;
+
+	Node(Value value)
+		:variant(std::move(value)) {}
 
 	bool IsArray() const;
 	bool IsBool() const;
 	bool IsDouble() const;
 	bool IsInt() const;
 	bool IsNull() const;
-	bool IsMap() const;
+	bool IsDict() const;
 	bool IsPureDouble() const;
 	bool IsString() const;
 	bool IsEqual(const Node& other) const;
@@ -55,7 +59,8 @@ public:
 	double AsDouble() const;
 	const Dict& AsMap() const;
 	const std::string& AsString() const;
-	const Node& GetValue() const;
+	const Value& GetValue() const;
+	Value& GetValue();
 	void PrintValue(detail::PrintContext context) const;
 };
 

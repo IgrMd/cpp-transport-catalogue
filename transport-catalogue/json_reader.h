@@ -1,5 +1,6 @@
 #pragma once
 #include "json.h"
+#include "json_builder.h"
 #include "request_handler.h"
 #include "map_renderer.h"
 #include "transport_catalogue.h"
@@ -60,15 +61,15 @@ svg::Color GetColor(const json::Node& color);
 
 
 //Обрабатывет stat_request "Stop"
-void ProcessStopStatRequest(const RequestHandler& req_handler, json::Array& stats,
+void ProcessStopStatRequest(const RequestHandler& req_handler, json::Builder& stats,
 	const detail::StatRequest& stat_request);
 
 //Обрабатывет stat_request "Bus"
-void ProcessBusStatRequest(const RequestHandler& req_handler, json::Array& stats,
+void ProcessBusStatRequest(const RequestHandler& req_handler, json::Builder& stats,
 	const detail::StatRequest& stat_request);
 
 //Обрабатывет stat_request "Map"
-void ProcessMapRequest(const RequestHandler& req_handler, json::Array& stats,
+void ProcessMapRequest(const RequestHandler& req_handler, json::Builder& stats,
 	const detail::StatRequest& stat_request);
 
 }//end namespace detail

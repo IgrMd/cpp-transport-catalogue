@@ -40,7 +40,7 @@ bool Node::IsNull() const {
 	return std::holds_alternative<std::nullptr_t>(*this);
 }
 
-bool Node::IsMap() const {
+bool Node::IsDict() const {
 	return std::holds_alternative<Dict>(*this);
 }
 
@@ -60,7 +60,7 @@ bool Node::AsBool() const {
 }
 
 const Dict& Node::AsMap() const {
-	if (!IsMap()) { throw std::logic_error("Not a map"s); }
+	if (!IsDict()) { throw std::logic_error("Not a map"s); }
 	return std::get<Dict>(*this);
 }
 
@@ -79,7 +79,11 @@ const std::string& Node::AsString() const {
 	return std::get<std::string>(*this);
 }
 
-const Node& Node::GetValue() const {
+const Node::Value& Node::GetValue() const {
+	return *this;
+}
+
+Node::Value& Node::GetValue() {
 	return *this;
 }
 
@@ -148,7 +152,7 @@ void NodePrinter::operator()(const Array& array) const {
 	bool is_first = true;
 	for (const Node& node : array) {
 		if (is_first) {
-			if (node.IsMap() || node.IsArray()) {
+			if (node.IsDict() || node.IsArray()) {
 				context.Indented().PrintIndent();
 				node.PrintValue(context.Indented());
 			} else {
@@ -157,7 +161,7 @@ void NodePrinter::operator()(const Array& array) const {
 			is_first = false;
 		} else {
 			context.out << ',' << '\n';
-			if (node.IsMap() || node.IsArray()) {
+			if (node.IsDict() || node.IsArray()) {
 				context.Indented().PrintIndent();
 				node.PrintValue(context.Indented());
 			} else {
@@ -176,7 +180,7 @@ void NodePrinter::operator()(const Dict& dict) const {
 	for (const auto& [key, value] : dict) {
 		if (is_first) {
 			PrintString(key, context.Indented());
-			if (value.IsMap() || value.IsArray()) {
+			if (value.IsDict() || value.IsArray()) {
 				value.PrintValue(context.Indented());
 			} else {
 				value.PrintValue({ context.out });
@@ -185,7 +189,7 @@ void NodePrinter::operator()(const Dict& dict) const {
 		} else {
 			context.out << ',' << '\n';
 			PrintString(key, context.Indented());
-			if (value.IsMap() || value.IsArray()) {
+			if (value.IsDict() || value.IsArray()) {
 				value.PrintValue(context.Indented());
 			} else {
 				value.PrintValue({ context.out });

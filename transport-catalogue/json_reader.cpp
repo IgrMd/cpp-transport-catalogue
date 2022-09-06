@@ -19,7 +19,7 @@ Document ReadFromJSON(std::istream& input) {
 void ProcessBaseRequests(TransportCatalogue& t_catalogue,
 	const Document& raw_requests)
 {
-	assert(raw_requests.GetRoot().IsMap());
+	assert(raw_requests.GetRoot().IsDict());
 	if ( !raw_requests.GetRoot().AsMap().count(BASE_REQUESTS) ) {
 		return;
 	}
@@ -67,7 +67,7 @@ void ProcessStatRequests(const RequestHandler& req_handler,
 	const Document& raw_requests, std::ostream& output)
 {
 	using detail::RequestType;
-	assert(raw_requests.GetRoot().IsMap());
+	assert(raw_requests.GetRoot().IsDict());
 	if ( !raw_requests.GetRoot().AsMap().count(STAT_REQUESTS) ) {
 		return;
 	}
@@ -93,7 +93,8 @@ void ProcessStatRequests(const RequestHandler& req_handler,
 		}
 		stat_requests.push_back(std::move(stat_request));
 	}
-	Array stats;
+	Builder stats;
+	stats.StartArray();
 	for (const auto& stat_request : stat_requests) {
 		switch (stat_request.type) {
 		case RequestType::StopStat:
@@ -110,12 +111,13 @@ void ProcessStatRequests(const RequestHandler& req_handler,
 			break;
 		}
 	}
-	Print(Document{ Node{ std::move(stats) } }, output);
+	stats.EndArray();
+	Print(Document{ Node{ stats.Build()}}, output);
 }
 
 RenderSettings ProcessRenderSettings(const Document& raw_requests) {
 	RenderSettings result;
-	assert(raw_requests.GetRoot().IsMap());
+	assert(raw_requests.GetRoot().IsDict());
 	if ( !raw_requests.GetRoot().AsMap().count(RENDER_SETTINGS) ) {
 		return {};
 	}
@@ -176,52 +178,62 @@ svg::Color GetColor(const Node& color) {
 }
 
 //stat_request.type == RequestType::StopStat
-void ProcessStopStatRequest(const RequestHandler& req_handler, Array& stats,
-	const detail::StatRequest& stat_request)
+void ProcessStopStatRequest(const RequestHandler& req_handler, Builder& stats,
+	const detail::StatRequest& stat_request) 
 {
 	auto stop_stat = req_handler.GetStopStat(stat_request.name);
 	if (stop_stat) {
-		Array buses;
+		Builder buses;
+		buses.StartArray();
 		for (const auto& bus : stop_stat->buses) {
-			buses.push_back(std::string{ bus });
+			buses.Value(std::string{ bus });
 		}
-		Dict stat{ {"buses"s, buses}, {"request_id"s, stat_request.id } };
-		stats.push_back(std::move(stat));
+		buses.EndArray();
+		stats.StartDict()
+			.Key("buses"s).Value(buses.Build().AsArray())
+			.Key("request_id"s).Value(stat_request.id)
+			.EndDict();
 	} else {
-		Dict stat{ {"request_id"s, stat_request.id }, {"error_message"s, "not found"s} };
-		stats.push_back(std::move(stat));
+		stats.StartDict()
+			.Key("request_id"s).Value(stat_request.id)
+			.Key("error_message"s).Value("not found"s)
+			.EndDict();
 	}
 }
 
 //stat_request.type == RequestType::BusStat
-void ProcessBusStatRequest(const RequestHandler& req_handler, Array& stats,
+void ProcessBusStatRequest(const RequestHandler& req_handler, Builder& stats,
 	const detail::StatRequest& stat_request)
 {
 	auto bus_stat = req_handler.GetBusStat(stat_request.name);
 	if (bus_stat) {
-		Dict stat;
-		stat.insert({ "curvature"s, (bus_stat->length_curv / bus_stat->length_geo) });
-		stat.insert({ "request_id"s, stat_request.id });
-		stat.insert({ "route_length"s, bus_stat->length_curv });
-		stat.insert({ "stop_count"s, static_cast<int>(bus_stat->stops_count) });
-		stat.insert({ "unique_stop_count"s, static_cast<int>(bus_stat->unique_stops_count) });
-		stats.push_back(std::move(stat));
+		stats.StartDict()
+			.Key("curvature"s).Value(bus_stat->length_curv / bus_stat->length_geo)
+			.Key("request_id"s).Value(stat_request.id)
+			.Key("route_length"s).Value(bus_stat->length_curv)
+			.Key("stop_count"s).Value(static_cast<int>(bus_stat->stops_count))
+			.Key("unique_stop_count"s).Value(static_cast<int>(bus_stat->unique_stops_count))
+			.EndDict();
 	} else {
-		Dict stat{ {"request_id"s, stat_request.id }, {"error_message"s, "not found"s} };
-		stats.push_back(std::move(stat));
+		stats.StartDict()
+			.Key("request_id"s).Value(stat_request.id)
+			.Key("error_message"s).Value("not found"s)
+			.EndDict();
 	}
 }
 
 //stat_request.type == RequestType::MAP
-void ProcessMapRequest(const RequestHandler& req_handler, Array& stats,
+void ProcessMapRequest(const RequestHandler& req_handler, Builder& stats,
 	const detail::StatRequest& stat_request)
 {
 	svg::Document map;
 	req_handler.RenderMap(map);
 	std::ostringstream os;
 	map.Render(os);
-	Dict stat{ {"map"s, os.str()}, {"request_id"s, stat_request.id} };
-	stats.push_back(std::move(stat));
+	stats.StartDict()
+		.Key("map"s).Value(os.str())
+		.Key("request_id"s).Value(stat_request.id)
+		.EndDict();
 }
 
 }//end namespace detail
