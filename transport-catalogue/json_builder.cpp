@@ -2,6 +2,8 @@
 
 namespace json {
 
+using namespace context;
+
 // ---------- Builder ------------------
 Builder::~Builder() {
 	for (Node* node : nodes_stack_) {
@@ -189,6 +191,7 @@ void Builder::CheckValueMethodCalled(const std::string_view name) {
 	status_ = ObjStatus::InProgress;
 }
 
+namespace context {
 // ---------- Context ------------------
 Context::Context(Builder& builder)
 	:builder_(builder) {}
@@ -223,5 +226,7 @@ ValueInArrayContext ArrayItemContext::Value(Node::Value value) {
 ValueInArrayContext ValueInArrayContext::Value(Node::Value value) {
 	return builder_.ValueAfterStartArray(std::move(value));
 }
+
+} //end namespace context
 
 } // end namespace json

@@ -6,6 +6,9 @@
 namespace json {
 
 class Builder;
+
+namespace context{
+
 class Context;
 class KeyContext;
 class DictItemContext;
@@ -30,7 +33,7 @@ protected:
 class KeyContext : public Context {
 public:
 	KeyContext(Builder& builder)
-		: Context(builder){}
+		: Context(builder) {}
 	ValueInKeyContext Value(Node::Value value);
 	KeyContext Key() = delete;
 	Builder& EndArray() = delete;
@@ -73,6 +76,8 @@ public:
 	Builder& EndDict() = delete;
 };
 
+} // end namespace context
+
 class Builder {
 
 	enum class LastMethodCalled {
@@ -85,12 +90,12 @@ class Builder {
 
 public:
 	explicit Builder() = default;
-	KeyContext Key(std::string key);
+	context::KeyContext Key(std::string key);
 	Builder& Value(Node::Value value);
-	ValueInKeyContext ValueAfterKey(Node::Value value);
-	ValueInArrayContext ValueAfterStartArray(Node::Value value);
-	DictItemContext StartDict();
-	ArrayItemContext StartArray();
+	context::ValueInKeyContext ValueAfterKey(Node::Value value);
+	context::ValueInArrayContext ValueAfterStartArray(Node::Value value);
+	context::DictItemContext StartDict();
+	context::ArrayItemContext StartArray();
 	Builder& EndDict();
 	Builder& EndArray();
 	Node Build();

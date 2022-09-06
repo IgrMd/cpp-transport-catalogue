@@ -7,7 +7,7 @@
 int main() {
 	using namespace std::string_literals;
 	using namespace transport_catalogue;
-    
+
 	auto doc = json_reader::ReadFromJSON(std::cin);
 	TransportCatalogue t_catalogue;
 
