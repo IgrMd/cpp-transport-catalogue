@@ -49,7 +49,7 @@ public:
 	bool IsDouble() const;
 	bool IsInt() const;
 	bool IsNull() const;
-	bool IsDict() const;
+	bool IsMap() const;
 	bool IsPureDouble() const;
 	bool IsString() const;
 	bool IsEqual(const Node& other) const;
@@ -89,7 +89,7 @@ namespace detail {
 // Контекст вывода, хранит ссылку на поток вывода и текущий отсуп
 struct PrintContext {
 	std::ostream& out;
-	int indent_step = 2;
+	int indent_step = 4;
 	int indent = 0;
 
 	// Выводит текущий отступ

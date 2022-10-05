@@ -2,8 +2,6 @@
 
 namespace json {
 
-using namespace context;
-
 // ---------- Builder ------------------
 Builder::~Builder() {
 	for (Node* node : nodes_stack_) {
@@ -11,7 +9,7 @@ Builder::~Builder() {
 	}
 }
 
-KeyContext Builder::Key(std::string key) {
+Builder::KeyContext Builder::Key(std::string key) {
 	CheckCallKey();
 	key_stack_.push_back(std::move(key));
 	return KeyContext(*this);
@@ -40,23 +38,23 @@ Builder& Builder::Value(Node::Value value) {
 	if (nodes_stack_.back()->IsArray()) {
 		return AddValueInArrayContext(std::move(value));
 	}
-	if (nodes_stack_.back()->IsDict()) {
+	if (nodes_stack_.back()->IsMap()) {
 		return AddValueInKeyContext(std::move(value));
 	}
 	return *this;
 }
 
-ValueInKeyContext Builder::ValueAfterKey(Node::Value value) {
+Builder::ValueInKeyContext Builder::ValueAfterKey(Node::Value value) {
 	CheckCallValue();
 	return ValueInKeyContext(AddValueInKeyContext(std::move(value)));
 }
 
-ValueInArrayContext Builder::ValueAfterStartArray(Node::Value value) {
+Builder::ValueInArrayContext Builder::ValueAfterStartArray(Node::Value value) {
 	CheckCallValue();
 	return ValueInArrayContext(AddValueInArrayContext(std::move(value)));
 }
 
-DictItemContext Builder::StartDict() {
+Builder::DictItemContext Builder::StartDict() {
 	CheckCallStartDict();
 	nodes_stack_.push_back(new Node(Dict{}));
 	return DictItemContext(*this);
@@ -71,7 +69,7 @@ Builder& Builder::EndDict() {
 			GetArrayRefFromStack().push_back(std::move(*node));
 			return *this;
 		}
-		if (nodes_stack_.back()->IsDict()) {
+		if (nodes_stack_.back()->IsMap()) {
 			GetDictRefFromStack().insert(
 				std::pair{ std::move(key_stack_.back()), std::move(*node) }
 			);
@@ -84,7 +82,7 @@ Builder& Builder::EndDict() {
 	return *this;
 }
 
-ArrayItemContext Builder::StartArray() {
+Builder::ArrayItemContext Builder::StartArray() {
 	CheckCallStartArray();
 	nodes_stack_.push_back(new Node(Array{}));
 	return ArrayItemContext(*this);
@@ -99,7 +97,7 @@ Builder& Builder::EndArray() {
 			GetArrayRefFromStack().push_back(std::move(*node));
 			return *this;
 		}
-		if (nodes_stack_.back()->IsDict()) {
+		if (nodes_stack_.back()->IsMap()) {
 			GetDictRefFromStack().insert(
 				std::pair{ std::move(key_stack_.back()), std::move(*node) }
 			);
@@ -129,7 +127,7 @@ void Builder::CheckCallKey() {
 	if (status_ == ObjStatus::COPMLETED) {
 		throw std::logic_error(".Key() method called for completed Object");
 	}
-	if (!nodes_stack_.back()->IsDict()) {
+	if (!nodes_stack_.back()->IsMap()) {
 		throw std::logic_error("Dict not started");
 	}
 	if (last_method_ == LastMethodCalled::KEY) {
@@ -145,22 +143,22 @@ void Builder::CheckCallValue() {
 
 void Builder::CheckCallStartDict() {
 	CheckValueMethodCalled(".StartDict()");
-	last_method_ = LastMethodCalled::StartDict;
+	last_method_ = LastMethodCalled::START_DICT;
 }
 
 void Builder::CheckCallEndDict() {
 	if (status_ == ObjStatus::COPMLETED) {
 		throw std::logic_error(".EndDict() method called for completed Object");
 	}
-	if (!nodes_stack_.back()->IsDict()) {
+	if (!nodes_stack_.back()->IsMap()) {
 		throw std::logic_error("Can't end non-Dict Object");
 	}
-	last_method_ = LastMethodCalled::EndDict;
+	last_method_ = LastMethodCalled::END_DICT;
 }
 
 void Builder::CheckCallStartArray() {
 	CheckValueMethodCalled(".StartArray()");
-	last_method_ = LastMethodCalled::StartArray;
+	last_method_ = LastMethodCalled::START_ARRAY;
 }
 
 void Builder::CheckCallEndArray() {
@@ -170,7 +168,7 @@ void Builder::CheckCallEndArray() {
 	if (!nodes_stack_.back()->IsArray()) {
 		throw std::logic_error("Can't end non-array Object");
 	}
-	last_method_ = LastMethodCalled::EndArray;
+	last_method_ = LastMethodCalled::END_ARRAY;
 }
 
 void Builder::CheckCallBuild() {
@@ -188,45 +186,42 @@ void Builder::CheckValueMethodCalled(const std::string_view name) {
 		nodes_stack_.back()->IsArray())) {
 		throw std::logic_error(std::string{ name } + " method called in incorrect way");
 	}
-	status_ = ObjStatus::InProgress;
+	status_ = ObjStatus::IN_PROGRESS;
 }
 
-namespace context {
 // ---------- Context ------------------
-Context::Context(Builder& builder)
+Builder::Context::Context(Builder& builder)
 	:builder_(builder) {}
 
-KeyContext Context::Key(std::string key) {
+Builder::KeyContext Builder::Context::Key(std::string key) {
 	return builder_.Key(std::move(key));
 }
-ArrayItemContext Context::StartArray() {
+Builder::ArrayItemContext Builder::Context::StartArray() {
 	return builder_.StartArray();
 }
-DictItemContext Context::StartDict() {
+Builder::DictItemContext Builder::Context::StartDict() {
 	return builder_.StartDict();
 }
-Builder& Context::EndArray() {
+Builder& Builder::Context::EndArray() {
 	return builder_.EndArray();
 }
-Builder& Context::EndDict() {
+Builder& Builder::Context::EndDict() {
 	return builder_.EndDict();
 }
 
 // ---------- KeyContext ------------------
-ValueInKeyContext KeyContext::Value(Node::Value value) {
+Builder::ValueInKeyContext Builder::KeyContext::Value(Node::Value value) {
 	return builder_.ValueAfterKey(std::move(value));
 }
 
 // ---------- ArrayItemContext ------------------
-ValueInArrayContext ArrayItemContext::Value(Node::Value value) {
+Builder::ValueInArrayContext Builder::ArrayItemContext::Value(Node::Value value) {
 	return builder_.ValueAfterStartArray(std::move(value));
 }
 
 // ---------- ValueInArrayContext ------------------
-ValueInArrayContext ValueInArrayContext::Value(Node::Value value) {
+Builder::ValueInArrayContext Builder::ValueInArrayContext::Value(Node::Value value) {
 	return builder_.ValueAfterStartArray(std::move(value));
 }
-
-} //end namespace context
 
 } // end namespace json

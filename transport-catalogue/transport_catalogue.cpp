@@ -12,7 +12,7 @@ void TransportCatalogue::AddStop(std::string&& name, geo::Coordinates coordinate
 	assert(!name_to_stop_.count(stop.name));
 	stops_.push_back(std::move(stop));
 	name_to_stop_[stops_.back().name] = &stops_.back();
-	stop_to_buses_[stops_.back().name];
+	stop_to_busses_[stops_.back().name];
 }
 
 void TransportCatalogue::SetStopDistances(std::string_view name_from,
@@ -55,6 +55,22 @@ std::pair<double, int> TransportCatalogue::CalculateLength(const Bus& bus) const
 	return { length_geo, length_curv };
 }
 
+std::optional<int> TransportCatalogue::GetStopPairDistance(
+	const std::string_view from, const std::string_view to) const {
+	if (!name_to_stop_.count(from) || !name_to_stop_.count(to)) {
+		return std::nullopt;
+	}
+	const Stop* from_p = name_to_stop_.at(from);
+	const Stop* to_p = name_to_stop_.at(to);
+	if (stop_pair_to_dist_.count({ from_p, to_p })) {
+		return std::optional<int>(stop_pair_to_dist_.at({ from_p, to_p }));
+	}
+	if (stop_pair_to_dist_.count({ to_p, from_p })) {
+		return std::optional<int>(stop_pair_to_dist_.at({ to_p, from_p }));
+	}
+	return std::nullopt;
+}
+
 std::optional<domain::BusStat> TransportCatalogue::GetBusStat(const std::string_view name) const {
 	const auto result = name_to_bus_.find(name);
 	if (result == name_to_bus_.end()) {
@@ -67,24 +83,32 @@ std::optional<domain::BusStat> TransportCatalogue::GetBusStat(const std::string_
 		{ result->first, stops_count, unique_stops_count, length_geo, length_curv });
 }
 
+size_t TransportCatalogue::GetStopCount() const {
+	return stops_.size();
+}
+
 std::optional<domain::StopStat> TransportCatalogue::GetStopStat(const std::string_view name) const {
-	const auto result = stop_to_buses_.find(name);
-	if (result == stop_to_buses_.end()) {
+	const auto result = stop_to_busses_.find(name);
+	if (result == stop_to_busses_.end()) {
 		static const std::set<std::string_view> empty_result;
 		return std::optional<domain::StopStat>();
 	}
 	return std::optional<domain::StopStat>({ result->first, result->second });
 }
 
-const std::deque <domain::Bus>& TransportCatalogue::GetBuses() const{
-	return buses_;
+const std::deque <domain::Bus>& TransportCatalogue::GetBusses() const{
+	return busses_;
+}
+
+const std::deque <domain::Stop>& TransportCatalogue::GetStops() const {
+	return stops_;
 }
 
 std::vector<const domain::Stop*> TransportCatalogue::GetStopsUsed() const {
 	std::vector<const domain::Stop*> stops;
-	stops.reserve(stop_to_buses_.size());
-	for (const auto& [stop, buses] : stop_to_buses_) {
-		if (!buses.empty()) {
+	stops.reserve(stop_to_busses_.size());
+	for (const auto& [stop, busses] : stop_to_busses_) {
+		if (!busses.empty()) {
 			stops.push_back(name_to_stop_.at(stop));
 		}
 	}

@@ -2,8 +2,11 @@
 
 using namespace transport_catalogue;
 
-RequestHandler::RequestHandler(const TransportCatalogue& db, const renderer::MapRenderer& renderer)
-	:db_(db), renderer_(renderer) {}
+RequestHandler::RequestHandler(const TransportCatalogue& db,
+	const renderer::MapRenderer& renderer, const transport_router::TransportRouter& router)
+	: db_(db)
+	, renderer_(renderer)
+	, router_(router) {}
 
 // Возвращает информацию о маршруте (запрос Bus)
 std::optional<BusStat> RequestHandler::GetBusStat(const std::string_view& bus_name) const {
@@ -17,9 +20,9 @@ std::optional<StopStat> RequestHandler::GetStopStat(const std::string_view& stop
 
 //Рисует карту (запрос Map)
 void RequestHandler::RenderMap(svg::Document& map) const {
-	std::vector<domain::Bus> buses{ db_.GetBuses().begin(), db_.GetBuses().end() };
-	std::sort(buses.begin(),
-		buses.end(),
+	std::vector<domain::Bus> busses{ db_.GetBusses().begin(), db_.GetBusses().end() };
+	std::sort(busses.begin(),
+		busses.end(),
 		[](const auto& lhs, const auto& rhs) {return lhs.name < rhs.name; }
 	);
 	std::vector<const domain::Stop*> stops = db_.GetStopsUsed();
@@ -27,5 +30,11 @@ void RequestHandler::RenderMap(svg::Document& map) const {
 		stops.end(),
 		[](const auto& lhs, const auto& rhs) {return lhs->name < rhs->name; }
 	);
-	renderer_.RenderMap(map, buses, stops);
+	renderer_.RenderMap(map, busses, stops);
+}
+
+//Строит мршрут (запрос Route)
+std::vector<transport_router::TransportRouter::EdgeInfo> RequestHandler::BuildRoute(
+	const std::string_view from, const std::string_view to) const {
+	return router_.BuildRoute(from, to);
 }

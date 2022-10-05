@@ -20,7 +20,7 @@ struct BusStat {
 
 struct StopStat {
 	const std::string_view name;
-	const std::set<std::string_view>& buses;
+	const std::set<std::string_view>& busses;
 };
 
 //Остановка

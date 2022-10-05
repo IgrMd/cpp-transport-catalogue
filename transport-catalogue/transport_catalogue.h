@@ -40,13 +40,19 @@ public:
 	void SetStopDistances(std::string_view name,
 		const std::unordered_map<std::string_view, int>& name_to_dist);
 
+	std::optional<int> GetStopPairDistance(const std::string_view from, const std::string_view to) const;
+
 	std::optional<domain::BusStat> GetBusStat(const std::string_view name) const;
 
 	std::optional<domain::StopStat> GetStopStat(const std::string_view name) const;
 
-	const std::deque<Bus>& GetBuses() const;
+	const std::deque<Bus>& GetBusses() const;
+
+	const std::deque<Stop>& GetStops() const;
 
 	std::vector<const Stop*> GetStopsUsed() const;
+
+	size_t GetStopCount() const;
 
 
 private:
@@ -54,7 +60,7 @@ private:
 	std::pair<double, int> CalculateLength(const Bus& bus) const;
 
 	//Контейнер автобусов (маршрутов)
-	std::deque <Bus> buses_;
+	std::deque <Bus> busses_;
 
 	//Контейнер для быстрого доступа к автобусам (маршрутам) по имени
 	std::unordered_map<std::string_view, const Bus*> name_to_bus_;
@@ -66,8 +72,9 @@ private:
 	std::unordered_map<std::string_view, const Stop*> name_to_stop_;
 
 	//Контенер для хранения информации об автобусах, проходящих через остановку
-	std::unordered_map<std::string_view, std::set<std::string_view>> stop_to_buses_;
+	std::unordered_map<std::string_view, std::set<std::string_view>> stop_to_busses_;
 
+	//Контенер для хранения расстояний между остановками
 	std::unordered_map<StopPair, int, StopPairHasher> stop_pair_to_dist_;
 };
 
@@ -97,10 +104,10 @@ void TransportCatalogue::AddBus(std::string&& name,
 			std::next(bus.stops.begin(), stops.size())
 		);
 	}
-	buses_.push_back(std::move(bus));
-	name_to_bus_[buses_.back().name] = &buses_.back();
+	busses_.push_back(std::move(bus));
+	name_to_bus_[busses_.back().name] = &busses_.back();
 	for (const auto& stop : stops) {
-		stop_to_buses_.at(stop).insert(buses_.back().name);
+		stop_to_busses_.at(stop).insert(busses_.back().name);
 	}
 }
 

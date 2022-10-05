@@ -4,6 +4,7 @@
 #include "request_handler.h"
 #include "map_renderer.h"
 #include "transport_catalogue.h"
+#include "transport_router.h"
 
 #include <cassert>
 #include <iostream>
@@ -12,6 +13,7 @@
 #include <sstream>
 #include <string_view>
 #include <utility>
+#include <variant>
 
 namespace json_reader {
 
@@ -31,13 +33,18 @@ void ProcessStatRequests(const RequestHandler& req_handler,
 //обрабатывает настройти рендера
 renderer::RenderSettings ProcessRenderSettings(const json::Document& raw_requests);
 
+//обрабатывает настройки маршрутизации
+transport_router::RoutingSettings ProcessRoutingSettings(const json::Document& raw_requests);
+
+
 namespace detail {
 
 enum class RequestType {
 	INCORRECT,
-	StopStat,
-	BusStat,
-	MAP
+	STOP_STAT,
+	BUS_STAT,
+	MAP,
+	ROUTE
 };
 struct AddStopRequest {
 	std::string_view name;
@@ -52,8 +59,10 @@ struct AddBusRequest {
 };
 struct StatRequest {
 	int id = 0;
-	RequestType type;
-	std::string_view name;
+	RequestType type{};
+	//std::string_view name;
+	std::variant<std::monostate, std::string_view, std::pair<std::string_view, std::string_view>>
+		request_data;
 };
 
 //Возвращает цвет в формате svg::Color
@@ -72,7 +81,10 @@ void ProcessBusStatRequest(const RequestHandler& req_handler, json::Builder& sta
 void ProcessMapRequest(const RequestHandler& req_handler, json::Builder& stats,
 	const detail::StatRequest& stat_request);
 
-}//end namespace detail
+//Обрабатывет stat_request "Route"
+void ProcessRouteRequest(const RequestHandler& req_handler, json::Builder& stats,
+	const detail::StatRequest& stat_request);
 
+}//end namespace detail
 
 } //end namespace json_reader

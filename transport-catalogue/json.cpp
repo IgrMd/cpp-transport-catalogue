@@ -40,7 +40,7 @@ bool Node::IsNull() const {
 	return std::holds_alternative<std::nullptr_t>(*this);
 }
 
-bool Node::IsDict() const {
+bool Node::IsMap() const {
 	return std::holds_alternative<Dict>(*this);
 }
 
@@ -60,7 +60,7 @@ bool Node::AsBool() const {
 }
 
 const Dict& Node::AsMap() const {
-	if (!IsDict()) { throw std::logic_error("Not a map"s); }
+	if (!IsMap()) { throw std::logic_error("Not a map"s); }
 	return std::get<Dict>(*this);
 }
 
@@ -152,7 +152,7 @@ void NodePrinter::operator()(const Array& array) const {
 	bool is_first = true;
 	for (const Node& node : array) {
 		if (is_first) {
-			if (node.IsDict() || node.IsArray()) {
+			if (node.IsMap() || node.IsArray()) {
 				context.Indented().PrintIndent();
 				node.PrintValue(context.Indented());
 			} else {
@@ -161,7 +161,7 @@ void NodePrinter::operator()(const Array& array) const {
 			is_first = false;
 		} else {
 			context.out << ',' << '\n';
-			if (node.IsDict() || node.IsArray()) {
+			if (node.IsMap() || node.IsArray()) {
 				context.Indented().PrintIndent();
 				node.PrintValue(context.Indented());
 			} else {
@@ -180,7 +180,7 @@ void NodePrinter::operator()(const Dict& dict) const {
 	for (const auto& [key, value] : dict) {
 		if (is_first) {
 			PrintString(key, context.Indented());
-			if (value.IsDict() || value.IsArray()) {
+			if (value.IsMap() || value.IsArray()) {
 				value.PrintValue(context.Indented());
 			} else {
 				value.PrintValue({ context.out });
@@ -189,7 +189,7 @@ void NodePrinter::operator()(const Dict& dict) const {
 		} else {
 			context.out << ',' << '\n';
 			PrintString(key, context.Indented());
-			if (value.IsDict() || value.IsArray()) {
+			if (value.IsMap() || value.IsArray()) {
 				value.PrintValue(context.Indented());
 			} else {
 				value.PrintValue({ context.out });
