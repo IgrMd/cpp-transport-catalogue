@@ -12,7 +12,7 @@ void TransportCatalogue::AddStop(std::string&& name, geo::Coordinates coordinate
 	assert(!name_to_stop_.count(stop.name));
 	stops_.push_back(std::move(stop));
 	name_to_stop_[stops_.back().name] = &stops_.back();
-	stop_to_busses_[stops_.back().name];
+	stop_to_buses_[stops_.back().name];
 }
 
 void TransportCatalogue::SetStopDistances(std::string_view name_from,
@@ -88,16 +88,16 @@ size_t TransportCatalogue::GetStopCount() const {
 }
 
 std::optional<domain::StopStat> TransportCatalogue::GetStopStat(const std::string_view name) const {
-	const auto result = stop_to_busses_.find(name);
-	if (result == stop_to_busses_.end()) {
+	const auto result = stop_to_buses_.find(name);
+	if (result == stop_to_buses_.end()) {
 		static const std::set<std::string_view> empty_result;
 		return std::optional<domain::StopStat>();
 	}
 	return std::optional<domain::StopStat>({ result->first, result->second });
 }
 
-const std::deque <domain::Bus>& TransportCatalogue::GetBusses() const{
-	return busses_;
+const std::deque <domain::Bus>& TransportCatalogue::GetBuses() const{
+	return buses_;
 }
 
 const std::deque <domain::Stop>& TransportCatalogue::GetStops() const {
@@ -106,9 +106,9 @@ const std::deque <domain::Stop>& TransportCatalogue::GetStops() const {
 
 std::vector<const domain::Stop*> TransportCatalogue::GetStopsUsed() const {
 	std::vector<const domain::Stop*> stops;
-	stops.reserve(stop_to_busses_.size());
-	for (const auto& [stop, busses] : stop_to_busses_) {
-		if (!busses.empty()) {
+	stops.reserve(stop_to_buses_.size());
+	for (const auto& [stop, buses] : stop_to_buses_) {
+		if (!buses.empty()) {
 			stops.push_back(name_to_stop_.at(stop));
 		}
 	}

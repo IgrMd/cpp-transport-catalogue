@@ -14,7 +14,7 @@ const RenderSettings& MapRenderer::GetSettings() const {
 	return render_settings_;
 }
 
-void MapRenderer::RenderMap(svg::Document& map, const std::vector<domain::Bus>& busses,
+void MapRenderer::RenderMap(svg::Document& map, const std::vector<domain::Bus>& buses,
 	const std::vector<const domain::Stop*>& stops) const {
 	std::vector<geo::Coordinates> geo_coords(stops.size());
 	std::transform(
@@ -28,18 +28,18 @@ void MapRenderer::RenderMap(svg::Document& map, const std::vector<domain::Bus>& 
 		render_settings_.height, render_settings_.padding
 	};
 
-	RenderBusRouts(map, busses, proj);
-	RenderBusNames(map, busses, proj);
+	RenderBusRouts(map, buses, proj);
+	RenderBusNames(map, buses, proj);
 	RenderStopPoints(map, stops, proj);
 	RenderStopNames(map, stops, proj);
 }
 
 void MapRenderer::RenderBusRouts(svg::Document& map,
-	const std::vector<domain::Bus>& busses, const SphereProjector& proj) const
+	const std::vector<domain::Bus>& buses, const SphereProjector& proj) const
 {
 	const size_t colors_count = render_settings_.color_palette.size();
 	size_t color_index = 0;
-	for (const auto& bus : busses) {
+	for (const auto& bus : buses) {
 		if (bus.stops.empty()) { continue; }
 		const auto& color = render_settings_.color_palette[color_index];
 		svg::Polyline route;
@@ -59,11 +59,11 @@ void MapRenderer::RenderBusRouts(svg::Document& map,
 }
 
 void MapRenderer::RenderBusNames(svg::Document& map,
-	const std::vector<domain::Bus>& busses, const SphereProjector& proj) const
+	const std::vector<domain::Bus>& buses, const SphereProjector& proj) const
 {
 	const size_t colors_count = render_settings_.color_palette.size();
 	size_t color_index = 0;
-	for (const auto& bus : busses) {
+	for (const auto& bus : buses) {
 		if (bus.stops.empty()) { continue; }
 		const auto& color = render_settings_.color_palette[color_index];
 		svg::Text name;

@@ -1,5 +1,7 @@
 #include "transport_router.h"
 
+static const double TIME_INITS_COEFF = 60. / 1000;
+
 namespace transport_router {
 
 TransportRouter::TransportRouter(const transport_catalogue::TransportCatalogue& db, RoutingSettings settings)
@@ -11,7 +13,7 @@ TransportRouter::TransportRouter(const transport_catalogue::TransportCatalogue& 
 
 void TransportRouter::BuildRouter() {
 	AddStopsToGraph();
-	AddBussesToGraph();
+	AddBusesToGraph();
 	router_ = std::make_unique<Router>(graph_);
 }
 
@@ -29,9 +31,9 @@ void TransportRouter::AddStopsToGraph() {
 	}
 }
 
-void TransportRouter::AddBussesToGraph() {
-	const auto& busses = db_.GetBusses();
-	for (const auto& bus : busses) {
+void TransportRouter::AddBusesToGraph() {
+	const auto& buses = db_.GetBuses();
+	for (const auto& bus : buses) {
 		
 		for (auto from = bus.stops.begin(); from != bus.stops.end(); ++from) {
 			Weight weight = 0;
@@ -80,7 +82,7 @@ std::vector<TransportRouter::EdgeInfo> TransportRouter::BuildRoute(
 }
 
 TransportRouter::Weight TransportRouter::ComputeWeight(int distance) const {
-	return 60. * distance / settings_.bus_velocity / 1000;
+	return distance / settings_.bus_velocity * TIME_INITS_COEFF;
 }
 
 TransportRouter::VertexId TransportRouter::GetNextVertexId() {

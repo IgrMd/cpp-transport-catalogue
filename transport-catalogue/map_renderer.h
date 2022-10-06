@@ -61,7 +61,7 @@ public:
 
 	const RenderSettings& GetSettings() const;
 
-	void RenderMap(svg::Document& map, const std::vector<Bus>& busses,
+	void RenderMap(svg::Document& map, const std::vector<Bus>& buses,
 		const std::vector<const Stop*>& stops) const;
 
 private:
@@ -69,11 +69,11 @@ private:
 
 	//Ломаные линии маршрутов
 	void RenderBusRouts(svg::Document& map,
-		const std::vector<Bus>& busses, const SphereProjector& proj) const;
+		const std::vector<Bus>& buses, const SphereProjector& proj) const;
 
 	//Названия маршрутов
 	void RenderBusNames(svg::Document& map,
-		const std::vector<Bus>& busses, const SphereProjector& proj) const;
+		const std::vector<Bus>& buses, const SphereProjector& proj) const;
 
 	//Точки остановок
 	void RenderStopPoints(svg::Document& map,

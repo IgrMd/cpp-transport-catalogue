@@ -81,7 +81,7 @@ public:
 private:
 	void BuildRouter();
 	void AddStopsToGraph();
-	void AddBussesToGraph();
+	void AddBusesToGraph();
 
 	Weight ComputeWeight(int distance) const;
 

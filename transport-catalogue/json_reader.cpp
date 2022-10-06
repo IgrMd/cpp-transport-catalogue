@@ -204,14 +204,14 @@ void ProcessStopStatRequest(const RequestHandler& req_handler, Builder& stats,
 	const detail::StatRequest& stat_request) {
 	auto stop_stat = req_handler.GetStopStat(std::get<std::string_view>(stat_request.request_data));
 	if ( stop_stat ) {
-		Builder busses;
-		busses.StartArray();
-		for ( const auto& bus : stop_stat->busses ) {
-			busses.Value(std::string{ bus });
+		Builder buses;
+		buses.StartArray();
+		for ( const auto& bus : stop_stat->buses ) {
+			buses.Value(std::string{ bus });
 		}
-		busses.EndArray();
+		buses.EndArray();
 		stats.StartDict()
-			.Key("buses"s).Value(busses.Build().AsArray())
+			.Key("buses"s).Value(buses.Build().AsArray())
 			.Key("request_id"s).Value(stat_request.id)
 			.EndDict();
 	} else {

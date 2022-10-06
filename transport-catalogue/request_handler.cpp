@@ -20,9 +20,9 @@ std::optional<StopStat> RequestHandler::GetStopStat(const std::string_view& stop
 
 //Рисует карту (запрос Map)
 void RequestHandler::RenderMap(svg::Document& map) const {
-	std::vector<domain::Bus> busses{ db_.GetBusses().begin(), db_.GetBusses().end() };
-	std::sort(busses.begin(),
-		busses.end(),
+	std::vector<domain::Bus> buses{ db_.GetBuses().begin(), db_.GetBuses().end() };
+	std::sort(buses.begin(),
+		buses.end(),
 		[](const auto& lhs, const auto& rhs) {return lhs.name < rhs.name; }
 	);
 	std::vector<const domain::Stop*> stops = db_.GetStopsUsed();
@@ -30,7 +30,7 @@ void RequestHandler::RenderMap(svg::Document& map) const {
 		stops.end(),
 		[](const auto& lhs, const auto& rhs) {return lhs->name < rhs->name; }
 	);
-	renderer_.RenderMap(map, busses, stops);
+	renderer_.RenderMap(map, buses, stops);
 }
 
 //Строит мршрут (запрос Route)
