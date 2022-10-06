@@ -1,6 +1,6 @@
 #include "transport_router.h"
 
-static const double TIME_INITS_COEFF = 60. / 1000;
+static const double TIME_UNITS_COEFF = 60. / 1000;
 
 namespace transport_router {
 
@@ -82,7 +82,7 @@ std::vector<TransportRouter::EdgeInfo> TransportRouter::BuildRoute(
 }
 
 TransportRouter::Weight TransportRouter::ComputeWeight(int distance) const {
-	return distance / settings_.bus_velocity * TIME_INITS_COEFF;
+	return distance / settings_.bus_velocity * TIME_UNITS_COEFF;
 }
 
 TransportRouter::VertexId TransportRouter::GetNextVertexId() {
