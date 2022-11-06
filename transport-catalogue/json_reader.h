@@ -7,6 +7,7 @@
 #include "transport_router.h"
 
 #include <cassert>
+#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -22,20 +23,21 @@ using transport_catalogue::TransportCatalogue;
 
 json::Document ReadFromJSON(std::istream& input);
 
-//Обрабатывает запросы на добавление в базу
-void ProcessBaseRequests(TransportCatalogue& t_catalogue,
-	const json::Document& raw_requests);
+// Обрабатывает запросы на добавление в базу
+TransportCatalogue ProcessBaseRequests(const json::Document& raw_requests);
 
 //Обрабатывает запросы чтения и выводит результат в поток
 void ProcessStatRequests(const RequestHandler& req_handler,
 	const json::Document& raw_requests, std::ostream& output);
 
-//обрабатывает настройти рендера
+// Обрабатывает настройти рендера
 renderer::RenderSettings ProcessRenderSettings(const json::Document& raw_requests);
 
-//обрабатывает настройки маршрутизации
+// Обрабатывает настройки маршрутизации
 transport_router::RoutingSettings ProcessRoutingSettings(const json::Document& raw_requests);
 
+// Обрабатывает путь к файлу
+std::filesystem::path ProcessPath(const json::Document& raw_requests);
 
 namespace detail {
 

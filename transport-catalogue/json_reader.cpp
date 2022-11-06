@@ -10,6 +10,7 @@ static const std::string BASE_REQUESTS = "base_requests"s;
 static const std::string RENDER_SETTINGS = "render_settings"s;
 static const std::string ROUTING_SETTINGS = "routing_settings"s;
 static const std::string STAT_REQUESTS = "stat_requests"s;
+static const std::string SERIALIZATION_SETTINGS = "serialization_settings"s;
 
 static const std::unordered_map<std::string_view, RequestType> REQUESTS_LIST{
 	{"Stop"sv, RequestType::STOP_STAT},
@@ -27,18 +28,20 @@ Document ReadFromJSON(std::istream& input) {
 	return { Load(input) };
 }
 
-void ProcessBaseRequests(TransportCatalogue& t_catalogue,
-	const Document& raw_requests) {
+TransportCatalogue ProcessBaseRequests(const Document& raw_requests) {
 	assert(raw_requests.GetRoot().IsMap());
-	if ( !raw_requests.GetRoot().AsMap().count(BASE_REQUESTS) ) {
-		return;
+	TransportCatalogue t_catalogue;
+	if (!raw_requests.GetRoot().AsMap().count(BASE_REQUESTS)) {
+		return t_catalogue;
 	}
 	const auto& requests = raw_requests.GetRoot().AsMap().at(BASE_REQUESTS).AsArray();
-	if ( requests.empty() ) { return; }
+	if (requests.empty()) {
+		return t_catalogue;
+	}
 	std::vector<detail::AddStopRequest> add_stop_requests;
 	std::vector<detail::AddBusRequest> add_bus_requests;
-	for ( const Node& request : requests ) {
-		if ( request.AsMap().at("type"s) == "Stop"s ) {
+	for (const Node& request : requests) {
+		if (request.AsMap().at("type"s) == "Stop"s) {
 			detail::AddStopRequest add_request;
 			add_request.name = request.AsMap().at("name"s).AsString();
 			add_request.latitude = request.AsMap().at("latitude"s).AsDouble();
@@ -47,7 +50,7 @@ void ProcessBaseRequests(TransportCatalogue& t_catalogue,
 				add_request.name_to_dist.insert({ name, distance.AsInt() });
 			}
 			add_stop_requests.push_back(std::move(add_request));
-		} else if ( request.AsMap().at("type"s) == "Bus"s ) {
+		} else if (request.AsMap().at("type"s) == "Bus"s) {
 			detail::AddBusRequest add_request;
 			add_request.name = request.AsMap().at("name"s).AsString();
 			add_request.is_roundtrip = request.AsMap().at("is_roundtrip"s).AsBool();
@@ -71,6 +74,7 @@ void ProcessBaseRequests(TransportCatalogue& t_catalogue,
 		t_catalogue.AddBus(add_bus_query.name,
 			add_bus_query.stops, add_bus_query.is_roundtrip);
 	}
+	return t_catalogue;
 }
 
 void ProcessStatRequests(const RequestHandler& req_handler,
@@ -176,6 +180,16 @@ RoutingSettings ProcessRoutingSettings(const Document& raw_requests) {
 		.SetBusVelocity(settings.at("bus_velocity"s).AsDouble());
 }
 
+std::filesystem::path ProcessPath(const json::Document& raw_requests) {
+	assert(raw_requests.GetRoot().IsMap());
+	if (!raw_requests.GetRoot().AsMap().count(SERIALIZATION_SETTINGS)) {
+		return {};
+	}
+	const auto& settings = raw_requests.GetRoot().AsMap().at(SERIALIZATION_SETTINGS).AsMap();
+	assert(settings.count("file"));
+	std::filesystem::path path = settings.at("file").AsString();
+	return path;
+}
 
 namespace detail {
 

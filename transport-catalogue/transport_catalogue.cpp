@@ -26,6 +26,13 @@ void TransportCatalogue::SetStopDistances(std::string_view name_from,
 	}
 }
 
+void TransportCatalogue::SetStopDistance(std::string_view from, std::string_view to, int  distance) {
+	auto stop_from = name_to_stop_.find(from);
+	auto stop_to = name_to_stop_.find(to);
+	assert(stop_from != name_to_stop_.end() && stop_to != name_to_stop_.end());
+	stop_pair_to_dist_[{stop_from->second, stop_to->second}] = distance;
+}
+
 std::pair<double, int> TransportCatalogue::CalculateLength(const Bus& bus) const {
 	double length_geo = 0;
 	int length_curv = 0;
@@ -85,6 +92,11 @@ std::optional<domain::BusStat> TransportCatalogue::GetBusStat(const std::string_
 
 size_t TransportCatalogue::GetStopCount() const {
 	return stops_.size();
+}
+
+const std::unordered_map<domain::StopPair, int, domain::StopPairHasher>& 
+TransportCatalogue::GetDistances() const {
+	return stop_pair_to_dist_;
 }
 
 std::optional<domain::StopStat> TransportCatalogue::GetStopStat(const std::string_view name) const {

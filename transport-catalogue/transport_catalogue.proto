@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package transport_catalogue_serialize;
+
+message Coordinates {
+	double lat = 1;
+	double lng = 2;
+}
+
+message RoadDistance {
+	uint32 destanation = 1;
+	int32 distance = 2;
+}
+
+message Stop {
+	string name = 1;
+	Coordinates coordinates = 2;
+	repeated RoadDistance road_distance = 3;
+}
+
+message Bus {
+	string name = 1;
+	repeated uint32 stop = 2;
+	bool is_round_trip = 3;
+}
+
+message RoutingSettings {
+	double bus_wait_time = 1;
+	double bus_velocity = 2;
+}
+
+message Point {
+	double x = 1;
+	double y = 2;
+}
+
+message Rgb {
+	uint32 r = 1;
+	uint32 g = 2;
+	uint32 b = 3;
+}
+message Rgba {
+	uint32 r = 1;
+	uint32 g = 2;
+	uint32 b = 3;
+	double opacity = 4;
+}
+
+message Color {
+	string str_color = 1;
+	Rgb rgb = 2;
+	Rgba rgba = 3;
+}
+
+message RenderSettings {
+	double width = 1;
+	double height = 2;
+	double padding = 3;
+	double stop_radius = 4;
+	double line_width = 5;
+	int32 bus_label_font_size = 6;
+	Point bus_label_offset = 7;
+	int32 stop_label_font_size = 8;
+	Point stop_label_offset = 9;
+	Color underlayer_color = 10;
+	double underlayer_width = 11;
+	repeated Color color_palette = 12;
+};
+
+message DataBase {
+	repeated Stop stop = 1;
+	repeated Bus bus = 2;
+	RenderSettings render_settings = 3;
+	RoutingSettings routing_settings = 4;
+}

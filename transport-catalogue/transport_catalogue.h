@@ -40,6 +40,9 @@ public:
 	void SetStopDistances(std::string_view name,
 		const std::unordered_map<std::string_view, int>& name_to_dist);
 
+	//Добавляет информацию о расстояниях между двумя остановками
+	void SetStopDistance(std::string_view from, std::string_view to, int  distance);
+
 	std::optional<int> GetStopPairDistance(const std::string_view from, const std::string_view to) const;
 
 	std::optional<domain::BusStat> GetBusStat(const std::string_view name) const;
@@ -54,6 +57,7 @@ public:
 
 	size_t GetStopCount() const;
 
+	const std::unordered_map<StopPair, int, StopPairHasher>& GetDistances() const;
 
 private:
 
