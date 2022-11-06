@@ -13,7 +13,7 @@ namespace transport_catalogue_serialize {
 using namespace std;
 using transport_catalogue::TransportCatalogue;
 
-static vector<Stop> FormStopMessages(const TransportCatalogue& db) {
+static vector<Stop> CreateStopMessages(const TransportCatalogue& db) {
 	const auto& db_stops = db.GetStops();
 	vector<Stop> stop_message_list;
 	stop_message_list.reserve(db_stops.size());
@@ -27,7 +27,7 @@ static vector<Stop> FormStopMessages(const TransportCatalogue& db) {
 	return stop_message_list;
 }
 
-static unordered_map<string_view, uint32_t> FormStopAssociativity(const vector<Stop>& stops) {
+static unordered_map<string_view, uint32_t> CreateStopAssociativity(const vector<Stop>& stops) {
 	unordered_map<string_view, uint32_t> stop_to_index;
 	for (size_t i = 0; i < stops.size(); ++i) {
 		const auto& stop_message = stops[i];
@@ -36,7 +36,7 @@ static unordered_map<string_view, uint32_t> FormStopAssociativity(const vector<S
 	return stop_to_index;
 }
 
-static vector<Bus> FormBusMessages(const TransportCatalogue& db,
+static vector<Bus> CreateBusMessages(const TransportCatalogue& db,
 	const unordered_map<string_view, uint32_t>& stop_to_index) {
 	const auto& db_buses = db.GetBuses();
 	vector<Bus> bus_message_list;
@@ -55,7 +55,7 @@ static vector<Bus> FormBusMessages(const TransportCatalogue& db,
 	return bus_message_list;
 }
 
-static void FormStopDistanceMessages([[out]] vector<Stop>& stops,
+static void CreateStopDistanceMessages([[out]] vector<Stop>& stops,
 	const TransportCatalogue& db, const unordered_map<string_view, uint32_t>& stop_to_index) {
 	const auto& db_distances = db.GetDistances();
 	for (const auto& [stop_pair, distance] : db_distances) {
@@ -68,13 +68,13 @@ static void FormStopDistanceMessages([[out]] vector<Stop>& stops,
 	}
 }
 
-static void FormTransportCatalogueMessages(
+static void CreateTransportCatalogueMessages(
 	const TransportCatalogue& db, DataBase& serialized_db)
 {
-	vector<Stop> stop_message_list = FormStopMessages(db);
-	unordered_map<string_view, uint32_t> stop_to_index = FormStopAssociativity(stop_message_list);
-	FormStopDistanceMessages(stop_message_list, db, stop_to_index);
-	vector<Bus> bus_message_list = FormBusMessages(db, stop_to_index);
+	vector<Stop> stop_message_list = CreateStopMessages(db);
+	unordered_map<string_view, uint32_t> stop_to_index = CreateStopAssociativity(stop_message_list);
+	CreateStopDistanceMessages(stop_message_list, db, stop_to_index);
+	vector<Bus> bus_message_list = CreateBusMessages(db, stop_to_index);
 	for (auto& stop_message : stop_message_list) {
 		*serialized_db.add_stop() = std::move(stop_message);
 	}
@@ -105,7 +105,7 @@ static void SetColorMessage(Color* color_message, const svg::Color& color) {
 	}
 }
 
-static void FormRenderSettingsMessages(
+static void CreateRenderSettingsMessages(
 	const renderer::RenderSettings& render_settings, DataBase& serialized_db)
 {
 	auto& render_settings_msg = *serialized_db.mutable_render_settings();
@@ -129,7 +129,7 @@ static void FormRenderSettingsMessages(
 	}
 }
 
-static void FormRoutingSettingsMessages(
+static void CreateRoutingSettingsMessages(
 	const transport_router::RoutingSettings routing_settings, DataBase& serialized_db) {
 	auto& routing_settings_msg = *serialized_db.mutable_routing_settings();
 	routing_settings_msg.set_bus_velocity(routing_settings.bus_velocity);
@@ -143,9 +143,9 @@ void Serialize(
 	const std::filesystem::path&				path) {
 	
 	DataBase serialized_db;
-	FormTransportCatalogueMessages(db, serialized_db);
-	FormRenderSettingsMessages(render_settings, serialized_db);
-	FormRoutingSettingsMessages(routing_settings, serialized_db);
+	CreateTransportCatalogueMessages(db, serialized_db);
+	CreateRenderSettingsMessages(render_settings, serialized_db);
+	CreateRoutingSettingsMessages(routing_settings, serialized_db);
 
 	std::ofstream out(path, std::ios::binary);
 	if (out.is_open()) {
